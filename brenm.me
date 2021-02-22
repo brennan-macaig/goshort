@@ -1,0 +1,7 @@
+server {
+    server_name brenm.me www.brenm.me;
+
+    location / {
+        proxy_pass http://localhost:8080;
+    }
+}

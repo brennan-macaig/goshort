@@ -1,0 +1,13 @@
+[Unit]
+Description=goshort: A URL shortener written in native Go.
+After=network.target
+
+[Service]
+Type=simple
+Restart=no
+User=goshort
+Group=goshort
+ExecStart=/usr/bin/goshort
+
+[Install]
+WantedBy=multi-user.target

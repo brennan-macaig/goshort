@@ -1,0 +1,98 @@
+---
+
+- name: "local tasks"
+  hosts: 127.0.0.1
+  connection: local
+  tasks:
+  - name: "compile goshort"
+    shell: "go build -o build/goshort cmd/goshort/main.go"
+
+
+- name: "remote tasks"
+  hosts: aws_ec2_micro
+  become: true
+  remote_user: '{{username}}'
+  tasks:
+  - name: "apt-get update"
+    apt: update_cache=yes
+
+  - name: "add self to /etc/hosts"
+    lineinfile:
+      dest: /etc/hosts
+      line: "127.0.0.1\t{{ansible_hostname}}"
+
+  - name: "copy binary to remote"
+    copy:
+      src: build/goshort
+      dest: /usr/bin/goshort
+      owner: root
+      group: root
+      force: yes
+      mode: '0755'
+
+  - name: "ensure /etc/goshort exists"
+    file:
+      path: /etc/goshort
+      state: directory
+
+  - name: "copy systemd unit to remote"
+    copy:
+      src: goshort.service
+      dest: /etc/systemd/system/goshort.service
+      owner: root
+      group: root
+      force: yes
+      mode: '0644'
+
+  - name: "create group"
+    group:
+      name: goshort
+      state: present
+
+  - name: "create user"
+    user:
+      name: goshort
+      groups: goshort
+      state: present
+
+  - name: "start systemd service"
+    systemd:
+      name: goshort
+      enabled: yes
+      state: started
+
+  - name: "install nginx"
+    apt:
+      name: nginx
+      state: present
+
+  - name: "add domain to nginx config"
+    copy:
+      src: brenm.me
+      dest: /etc/nginx/sites-available/brenm.me
+      owner: root
+      group: root
+      force: yes
+      mode: '0644'
+
+  - name: "add symlink"
+    shell: ln -s /etc/nginx/sites-available/brenm.me /etc/nginx/sites-enabled/brenm.me
+
+  - name: "reload nginx"
+    shell: nginx -s reload
+
+  - name: "install certbot ppa"
+    shell: add-apt-repository ppa:certbot/certbot
+
+  - name: "install certbot"
+    apt:
+      name: python-certbot-nginx
+      state: present
+
+  - name: "allow HTTPS through firewall"
+    shell: "ufw allow 'Nginx Full'"
+
+  - name: "remove nginx http"
+    shell: "ufw delete allow 'Nginx HTTP'"
+
+  # Let's do the lets encrypt stuff manually, because I just don't want to deal with it here.

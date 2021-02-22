@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configPath  = "routes.json"
+	configPath  = "/etc/routes.json"
 	secretsPath = "secrets.json"
 	hashLen     = 6
 	postRoute   = "/post/new-route"
