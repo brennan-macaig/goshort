@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sync"
 )
 
 const (
@@ -19,6 +20,7 @@ const (
 type Routing struct {
 	Config Config
 	Routes Routes
+	mu *sync.Mutex
 }
 
 type Config struct {
@@ -81,6 +83,9 @@ func (ro *Routing) GenericServer(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ro *Routing) AddNewRoute(w http.ResponseWriter, r *http.Request) {
+	ro.mu.Lock()
+	defer ro.mu.Unlock()
+
 	decoder := json.NewDecoder(r.Body)
 	var req AddRouteRequest
 	err := decoder.Decode(&req)
@@ -148,6 +153,7 @@ func readConfig(path string) (Routing, error) {
 	r := Routing{
 		Config: cfg,
 		Routes: make(map[string]string),
+		mu: &sync.Mutex{},
 	}
 	err = r.Routes.makeRoutes(r.Config)
 	return r, nil
